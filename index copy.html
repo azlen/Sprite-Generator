@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Example</title>
+	<script src="jQuery.js"></script>
+	<script src="elessar.js"></script>
+	<link rel="stylesheet" type="text/css" href="elessar.css">
+	<script src="pixel-sprite-generator.js"></script>
+	<style type="text/css" media="screen">
+		/*canvas {
+			padding: 5px;
+		}
+		div {
+			padding: 10px 0 15px 0;
+			font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+			font-size: 12px;
+		}*/
+		html, body{
+			margin:0px;
+			padding:0px;
+		}
+		canvas.sprite{
+			padding:5px;
+		}
+		*{
+			vertical-align:top;
+		}
+		#editor-container{
+			display:inline-block;
+		}
+		#editor{
+			cursor:pointer;
+		}
+		#preview-container{
+			width:500px;
+			display:inline-block;
+		}
+		#tools{
+			display:inline-block;
+		}
+		#color{
+			width:50%;
+		}
+
+		#h-range{
+			background: -moz-linear-gradient(left, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+			background: -ms-linear-gradient(left, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+			background: -o-linear-gradient(left, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+			background: -webkit-gradient(linear, left top, right top, from(#ff0000), color-stop(0.17, #ffff00), color-stop(0.33, #00ff00), color-stop(0.5, #00ffff), color-stop(0.67, #0000ff), color-stop(0.83, #ff00ff), to(#ff0000));
+			background: -webkit-linear-gradient(top, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+			background: linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+		}
+		#s-range{	
+			background: rgba(255,255,255,1);
+			background: -moz-linear-gradient(left, rgba(255,255,255,1) 0%, rgba(255,0,0,1) 100%);
+			background: -webkit-gradient(left top, right top, color-stop(0%, rgba(255,255,255,1)), color-stop(100%, rgba(255,0,0,1)));
+			background: -webkit-linear-gradient(left, rgba(255,255,255,1) 0%, rgba(255,0,0,1) 100%);
+			background: -o-linear-gradient(left, rgba(255,255,255,1) 0%, rgba(255,0,0,1) 100%);
+			background: -ms-linear-gradient(left, rgba(255,255,255,1) 0%, rgba(255,0,0,1) 100%);
+			background: linear-gradient(to right, rgba(255,255,255,1) 0%, rgba(255,0,0,1) 100%);
+			filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#ff0000', GradientType=1 );
+		}
+		#l-range{	
+			background: rgba(0,0,0,1);
+			background: -moz-linear-gradient(left, rgba(0,0,0,1) 0%, rgba(255,255,255,1) 100%);
+			background: -webkit-gradient(left top, right top, color-stop(0%, rgba(0,0,0,1)), color-stop(100%, rgba(255,255,255,1)));
+			background: -webkit-linear-gradient(left, rgba(0,0,0,1) 0%, rgba(255,255,255,1) 100%);
+			background: -o-linear-gradient(left, rgba(0,0,0,1) 0%, rgba(255,255,255,1) 100%);
+			background: -ms-linear-gradient(left, rgba(0,0,0,1) 0%, rgba(255,255,255,1) 100%);
+			background: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(255,255,255,1) 100%);
+			filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#000000', endColorstr='#ffffff', GradientType=1 );
+		}
+		#invisible-range{
+			display:none;
+		}
+
+		#color, #variation{
+			display:inline-block;
+		}
+		#variation span{
+			display:inline-block;
+			vertical-align:middle;
+			width:40px;
+		}
+		#variation input{
+			margin:5px;
+		}
+	</style>
+</head>
+<body>
+	<div id="editor-container">
+		<div id="tools">
+			<button onclick="setTool(0)">0</button><br/>
+			<button onclick="setTool(1)">1</button><br/>
+			<button onclick="setTool(2)">2</button><br/>
+			<button onclick="setTool(3)">3</button><br/>
+			<input type="checkbox" onchange="toggleMirror('x')" autocomplete="off"/><br/>
+			<input type="checkbox" onchange="toggleMirror('y')" autocomplete="off"/><br/>
+		</div>
+		<canvas id="editor"></canvas>
+	</div>
+	<div id="preview-container">
+		<button onclick="updateSprites()">Generate Again</button>
+		<div id="preview">
+			
+		</div>
+	</div>
+	<div id="color">
+		
+	</div>
+	<div id="variation">
+		<input id="h-variation" value="50" min="15" max="360" onmousemove="this.nextSibling.textContent = this.value"  autocomplete="off" type="range"/><span>50</span><br/>
+		<input id="s-variation" value="50" min="15" max="360" onmousemove="this.nextSibling.textContent = this.value"  autocomplete="off" type="range"/><span>50</span><br/>
+		<input id="l-variation" value="50" min="15" max="360" onmousemove="this.nextSibling.textContent = this.value"  autocomplete="off" type="range"/><span>50</span>
+	</div>
+	<script>
+		var tools = {0:[0],1:[1],2:[2],3:[0,1],4:[0,2],5:[1,2],6:[0,1,2]}
+
+		var ranges = []
+		for(var i = 0; i < 4; i++){
+			var range = new RangeBar({
+				values:[[],[[250,360]],[[250,360]],[]][i],
+				min: 0, // value at start of bar
+				max: 360, // value at end of bar
+				minSize: 15, // smallest allowed range (in bar units)
+				label: function(){
+					return '-'
+				},
+			});
+			range.$el[0].id = ['h','s','l','invisible'][i]+'-range'
+			ranges.push(range)
+			document.querySelector('#color').appendChild(range.$el[0])
+		}
+
+		function getHSL(){
+			var hsl = {}
+			for(var i = 0; i < 3; i++){
+				var value = ranges[i].val()
+				if(value.length == 0){
+					value = [[0,360]]
+				}
+				hsl[['h','s','l'][i]] = {
+					value: value,
+					variation: Number(document.querySelector('#'+['h','s','l'][i]+'-variation').value)
+				}
+			}
+			return hsl
+		}
+
+		var dontdelete = false;
+		range.on('changing', function(e){
+			dontdelete = true;
+		})
+		range.on('change', function(e){
+			setTimeout(function(){dontdelete=false},0)
+		})
+		function destroyrange(r){
+			if(!dontdelete){
+				var index = Array.prototype.indexOf.call(r.parentElement.children, r);
+				var index2 = Array.prototype.indexOf.call(r.parentElement.parentElement.children, r.parentElement)
+				var arange = ranges[index2].ranges[index]
+				ranges[index2].ranges.splice(index,1)
+				console.log(arange)
+				arange.$el[0].parentElement.removeChild(arange.$el[0])
+				//range.remove()
+			}
+			
+		}
+	</script>
+
+	<script src="main.js"></script>
+
+	<script>
+
+		/*
+			Empty
+			Always border
+			Always body
+			Randomly chosen Empty/Body
+			Randomly chosen Empty/Border
+			Randomly chosen Border/Body
+			Randomly chosen Border/Empty/Body
+
+			//
+			Single color (not contributing to border?)
+		*/
+
+		/*
+			color picker
+			H range | H variation
+			S range | S variation
+			L range | L variation
+		*/
+		
+		var editor = document.querySelector('#editor')
+		var ctx = editor.getContext('2d')
+		var PIXEL_SIZE = 30
+		var GRID_SIZE = [16,16]
+		var grid = []
+
+		var mirror = {x:false,y:false}
+		function toggleMirror(m){
+			mirror[m] = !mirror[m]
+			updateSprites()
+		}
+
+		var tool = 1
+		function setTool(x){
+			tool = x
+		}
+		var tcolors = [0,"#f00","#0f0","#00f"]
+
+		for(var y = 0; y < GRID_SIZE[1]; y++){
+			var row = []
+			for(var x = 0; x < GRID_SIZE[0]; x++){
+				row.push(0)
+			}
+			grid.push(row)
+		}
+		editor.width = GRID_SIZE[0]*PIXEL_SIZE+1
+		editor.height = GRID_SIZE[1]*PIXEL_SIZE+1
+		ctx.translate(.5,.5)
+
+		var mouse = {x:0,y:0,down:false}
+
+		function update(){
+			requestAnimationFrame(update)
+			ctx.clearRect(0,0,editor.width,editor.height)
+			for(var y = 0; y < GRID_SIZE[1]; y++){
+				for(var x = 0; x < GRID_SIZE[0]; x++){
+					var mx = x;
+					var my = y;
+					if(mirror.x && mx >= GRID_SIZE[0]/2){
+						mx = GRID_SIZE[0] - mx - 1
+					}
+					if(mirror.y && my >= GRID_SIZE[1]/2){
+						my = GRID_SIZE[1] - my - 1
+					}
+					ctx.strokeRect(x*PIXEL_SIZE,y*PIXEL_SIZE,PIXEL_SIZE,PIXEL_SIZE)
+					if(grid[my][mx] > 0){
+						ctx.fillStyle = tcolors[grid[my][mx]]
+						ctx.fillRect(x*PIXEL_SIZE,y*PIXEL_SIZE,PIXEL_SIZE,PIXEL_SIZE)
+					}
+				}
+			}
+			ctx.fillStyle="rgba(0,0,0,0.1)"
+			ctx.fillRect(Math.floor(mouse.x/PIXEL_SIZE)*PIXEL_SIZE, Math.floor(mouse.y/PIXEL_SIZE)*PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE)
+		}
+		window.onmousemove = function(e){
+			mouse.x = e.clientX - editor.offsetLeft + window.scrollX;
+			mouse.y = e.clientY - editor.offsetTop + window.scrollY;
+		}
+		function drawPixel(){
+			var x = Math.floor(mouse.x/PIXEL_SIZE)
+			var y = Math.floor(mouse.y/PIXEL_SIZE)
+			if(mirror.x && x >= GRID_SIZE[0]/2){
+				x = GRID_SIZE[0] - x - 1
+			}
+			if(mirror.y && y >= GRID_SIZE[1]/2){
+				y = GRID_SIZE[1] - y - 1
+			}
+			if(grid[y][x] != tool){
+				grid[y][x] = tool;
+				updateSprites();
+			}
+		}
+		editor.onmousemove = function(e){
+			if(mouse.down){
+				drawPixel()
+			}
+		}
+		editor.onmousedown = function(e){
+			drawPixel()
+			mouse.down = true
+		}
+		window.onmouseup = function(e){
+			mouse.down = false
+		}
+		update()
+	</script>
+
+	<script type="text/javascript" charset="utf-8">
+		function getScaledImageData(scale,c,x,y,w,h) {
+				var imageData = c.getImageData(x,y,w,h)
+				var scaled = c.createImageData(imageData.width * scale, imageData.height * scale);
+
+				for(var row = 0; row < imageData.height; row++) {
+					for(var col = 0; col < imageData.width; col++) {
+						var sourcePixel = [
+							imageData.data[(row * imageData.width + col) * 4 + 0],
+							imageData.data[(row * imageData.width + col) * 4 + 1],
+							imageData.data[(row * imageData.width + col) * 4 + 2],
+							imageData.data[(row * imageData.width + col) * 4 + 3]
+						];
+						for(var y = 0; y < scale; y++) {
+							var destRow = row * scale + y;
+							for(var x = 0; x < scale; x++) {
+								var destCol = col * scale + x;
+								for(var i = 0; i < 4; i++) {
+									scaled.data[(destRow * scaled.width + destCol) * 4 + i] =
+										sourcePixel[i];
+								}
+							}
+						}
+					}
+				}
+
+			return scaled;
+		}
+		var SPRITE_SCALE = 4;
+		var SPRITE_COUNT = 10;
+		var spaceship = new psg.Mask([
+			0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 1, 1,
+			0, 0, 0, 0, 1,-1,
+			0, 0, 0, 1, 1,-1,
+			0, 0, 0, 1, 1,-1,
+			0, 0, 1, 1, 1,-1,
+			0, 1, 1, 1, 2, 2,
+			0, 1, 1, 1, 2, 2,
+			0, 1, 1, 1, 2, 2,
+			0, 1, 1, 1, 1,-1,
+			0, 0, 0, 1, 1, 1,
+			0, 0, 0, 0, 0, 0
+		], 6, 12, true, false);
+
+		var sprite;
+		preview = document.querySelector('#preview');
+		function updateSprites(){
+			preview.innerHTML = '';
+			var arr = []
+			for(var i = 0; i < grid.length/(mirror.y+1); i++){
+				arr = arr.concat(grid[i].map(function(x){
+					if(x==1){
+						return -1
+					}else if (x>1){
+						return x-1
+					}else{
+						return x
+					}
+				}).filter(function(x,index){
+					if(!(mirror.x && index > GRID_SIZE[0]/2-1)){
+						return true
+					}
+				}))
+			}
+			var mask = new psg.Mask(arr,GRID_SIZE[0]/(mirror.x+1),GRID_SIZE[1]/(mirror.y+1),mirror.x,mirror.y)
+			console.log(arr)
+			for (var i = 0; i < SPRITE_COUNT; i++) {
+				sprite = new psg.Sprite(mask, {
+						colored         : true
+				});
+				var ctx2 = sprite.canvas.getContext('2d')
+				var imageData = getScaledImageData(SPRITE_SCALE,ctx2,0,0,sprite.canvas.width,sprite.canvas.height)
+				sprite.canvas.width = GRID_SIZE[0]*SPRITE_SCALE
+				sprite.canvas.height = GRID_SIZE[1]*SPRITE_SCALE
+				ctx2.putImageData(imageData,0,0)
+				sprite.canvas.classList.add('sprite')
+				preview.appendChild(sprite.canvas);
+			}
+		}
+	</script>
+</body>
+</html>

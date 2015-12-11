@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Pixelart Generator</title>
+	<script src="jQuery.js"></script>
+	<script src="elessar.js"></script>
+	<link rel="stylesheet" type="text/css" href="elessar.css">
+	<style type="text/css" media="screen">
+		/*canvas {
+			padding: 5px;
+		}
+		div {
+			padding: 10px 0 15px 0;
+			font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+			font-size: 12px;
+		}*/
+		html, body{
+			margin:0px;
+			padding:0px;
+		}
+		canvas.sprite{
+			padding:5px;
+		}
+		*{
+			vertical-align:top;
+		}
+		#editor-container{
+			display:inline-block;
+		}
+		#editor{
+			cursor:pointer;
+		}
+		#preview-container{
+			width:500px;
+			display:inline-block;
+		}
+		#tools{
+			display:inline-block;
+		}
+		#tools button{
+			border:none;
+			margin:5px;
+			cursor:pointer;
+		}
+		#tools button.selected{
+			outline:2px solid #000;
+		}
+		#color{
+			width:50%;
+		}
+
+		#h-range{
+			background: -moz-linear-gradient(left, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+			background: -ms-linear-gradient(left, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+			background: -o-linear-gradient(left, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+			background: -webkit-gradient(linear, left top, right top, from(#ff0000), color-stop(0.17, #ffff00), color-stop(0.33, #00ff00), color-stop(0.5, #00ffff), color-stop(0.67, #0000ff), color-stop(0.83, #ff00ff), to(#ff0000));
+			background: -webkit-linear-gradient(top, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+			background: linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+		}
+		#s-range{	
+			background: rgba(255,255,255,1);
+			background: -moz-linear-gradient(left, rgba(255,255,255,1) 0%, rgba(255,0,0,1) 100%);
+			background: -webkit-gradient(left top, right top, color-stop(0%, rgba(255,255,255,1)), color-stop(100%, rgba(255,0,0,1)));
+			background: -webkit-linear-gradient(left, rgba(255,255,255,1) 0%, rgba(255,0,0,1) 100%);
+			background: -o-linear-gradient(left, rgba(255,255,255,1) 0%, rgba(255,0,0,1) 100%);
+			background: -ms-linear-gradient(left, rgba(255,255,255,1) 0%, rgba(255,0,0,1) 100%);
+			background: linear-gradient(to right, rgba(255,255,255,1) 0%, rgba(255,0,0,1) 100%);
+			filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#ff0000', GradientType=1 );
+		}
+		#l-range{	
+			background: rgba(0,0,0,1);
+			background: -moz-linear-gradient(left, rgba(0,0,0,1) 0%, rgba(255,255,255,1) 100%);
+			background: -webkit-gradient(left top, right top, color-stop(0%, rgba(0,0,0,1)), color-stop(100%, rgba(255,255,255,1)));
+			background: -webkit-linear-gradient(left, rgba(0,0,0,1) 0%, rgba(255,255,255,1) 100%);
+			background: -o-linear-gradient(left, rgba(0,0,0,1) 0%, rgba(255,255,255,1) 100%);
+			background: -ms-linear-gradient(left, rgba(0,0,0,1) 0%, rgba(255,255,255,1) 100%);
+			background: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(255,255,255,1) 100%);
+			filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#000000', endColorstr='#ffffff', GradientType=1 );
+		}
+		#invisible-range{
+			display:none;
+		}
+
+		#color, #variation{
+			display:inline-block;
+		}
+		#variation span{
+			display:inline-block;
+			vertical-align:middle;
+			width:40px;
+		}
+		#variation input{
+			margin:5px;
+		}
+
+		#frames{
+			margin-left:38px;
+		}
+		.frame{
+			background-color:#ccc;
+			border:0;
+			margin:5px;
+			cursor:pointer;
+		}
+		.frame.selected{
+			outline:2px solid #000;
+		}
+	</style>
+</head>
+<body>
+	<div id="editor-container">
+		<div id="frames-container">
+			<span id="frames"></span>
+			<button onclick="addFrame()">+</button>
+			<button onclick="removeFrame()">-</button>
+		</div>
+		<div id="tools">
+			<button class="btn btn--1" onclick="setTool(-1)">M</button><br />
+			<input type="checkbox" onchange="toggleMirror('x')" autocomplete="off"/>x<br/>
+			<input type="checkbox" onchange="toggleMirror('y')" autocomplete="off"/>y<br/>
+		</div>
+		<canvas id="editor"></canvas><br/>
+		<button onclick="clearGrid()">Clear Canvas</button>
+	</div>
+	<div id="preview-container">
+		<button onclick="updateSprites()">Generate Again</button><br />
+		<button onclick="animating = !animating">Toggle Animation</button><br />
+		Animation Speed: <input type="range" min="2" max="60" value="20" onmousemove="this.nextSibling.textContent = this.value; animationspeed = Number(this.value)" autocomplete="off"/><span>20</span>
+		<div id="preview">
+			
+		</div>
+	</div>
+	<div id="pallette"></div>
+	<div id="color">
+		
+	</div>
+	<div id="variation">
+		<input id="h-variation" value="50" min="15" max="360" onmousemove="this.nextSibling.textContent = this.value"  autocomplete="off" type="range"/><span>50</span><br/>
+		<input id="s-variation" value="50" min="15" max="360" onmousemove="this.nextSibling.textContent = this.value"  autocomplete="off" type="range"/><span>50</span><br/>
+		<input id="l-variation" value="50" min="15" max="360" onmousemove="this.nextSibling.textContent = this.value"  autocomplete="off" type="range"/><span>50</span>
+	</div>
+	<div><button onclick="alert('You can\'t export just yet.')">EXPORT</button></div>
+	<script>
+		var rspr = {}
+
+		rspr.Template = function(array, w, h, mx, my){
+			this.array = array
+			this.w = w
+			this.h = h
+			this.mx = mx
+			this.my = my
+			this.mmx = mx + 1
+			this.mmy = my + 1
+		}
+
+		function clone(item) {
+    if (!item) { return item; } // null, undefined values check
+
+    var types = [ Number, String, Boolean ], 
+        result;
+
+    // normalizing primitives if someone did new String('aaa'), or new Number('444');
+    types.forEach(function(type) {
+        if (item instanceof type) {
+            result = type( item );
+        }
+    });
+
+    if (typeof result == "undefined") {
+        if (Object.prototype.toString.call( item ) === "[object Array]") {
+            result = [];
+            item.forEach(function(child, index, array) { 
+                result[index] = clone( child );
+            });
+        } else if (typeof item == "object") {
+            // testing that this is DOM
+            if (item.nodeType && typeof item.cloneNode == "function") {
+                var result = item.cloneNode( true );    
+            } else if (!item.prototype) { // check that this is a literal
+                if (item instanceof Date) {
+                    result = new Date(item);
+                } else {
+                    // it is an object literal
+                    result = {};
+                    for (var i in item) {
+                        result[i] = clone( item[i] );
+                    }
+                }
+            } else {
+                // depending what you would like here,
+                // just keep the reference, or create new object
+                if (false && item.constructor) {
+                    // would not advice to do that, reason? Read below
+                    result = new item.constructor();
+                } else {
+                    result = item;
+                }
+            }
+        } else {
+            result = item;
+        }
+    }
+
+    return result;
+}
+
+		rspr.Sprite = function(temp){
+			coloridstorage = {} // resets coloridstorage
+			
+			var idstatestorage = {}
+			var idcolorstorage = {}
+			this.canvas = []
+
+			for(var arr = 0; arr < temp.array.length; arr++){
+
+				var array = clone(temp.array[arr])
+				if(temp.mx){
+					var newarray = array.slice()
+					for(var i = 0; i < array.length / temp.w; i++){
+						var index = (i - 1) * (temp.w * temp.mmx) + temp.w
+						newarray = newarray.slice(0, index)
+								.concat( Array.apply(null, Array(temp.w)).map(Number.prototype.valueOf,0) )
+								.concat( newarray.slice(index) )
+					}
+					array = newarray
+				}
+
+				if(temp.my){
+					array = array.concat(array.map(function(){return 0}))
+				}
+				
+				var canvas = document.createElement('canvas')
+				canvas.width = temp.w * temp.mmx 
+				canvas.height = temp.h * temp.mmy
+				var sctx = canvas.getContext('2d')
+				var imageData = sctx.getImageData(0,0,canvas.width, canvas.height)
+
+				function setColor(i,i2){
+					var color = idcolorstorage[array[i].id] || getColor(array[i].hsl)
+					idcolorstorage[array[i].id] = color
+					imageData.data[i2*4] = color[0]
+					imageData.data[i2*4+1] = color[1]
+					imageData.data[i2*4+2] = color[2]
+					imageData.data[i2*4+3] = [0,255][(array[i].hsl != undefined)+0]
+				}
+
+				var borderlist = []
+
+				function drawPoint(i){
+					if(typeof array[i] != 'object'){return}
+					var type = idstatestorage[array[i].id]+1 || tools[array[i].tool][rndint(0, tools[array[i].tool].length - 1)]+1
+					type -= 1
+					idstatestorage[array[i].id] = type
+					if(type == 0){
+						array[i] = 0
+					}if(type == 1){
+						array[i].hsl.l = {value: [[50,80]], variation:20} // CHANGE THIS BASED ON HOW BRIGHT YOU WANT THE BORDERS TO BE	
+					}else if (type == 2){
+						borderlist.push(i)
+					}
+
+					setColor(i, i)
+				}
+
+				var l = array.length/(temp.w * temp.mmx);
+				if(temp.mx){ // mirror x
+					for(var i = 0; i < l;i++){
+						array = array.slice(0, i*temp.w*2+temp.w).concat( array.slice(i*temp.w*2, i*temp.w*2+temp.w).reverse() ).concat( array.slice((i+1)*temp.w*2) )
+					}
+				}
+				if(temp.my){ // mirror y
+					for(var i = l/2; i < l; i++){ 
+						array = array.slice(0, i*(temp.w * temp.mmx)).concat( array.slice((l-i-1)*(temp.w * temp.mmx), (l-i-1)*(temp.w * temp.mmx)+(temp.w * temp.mmx)) ).concat((i+1)*(temp.w * temp.mmx))
+					}
+				}
+				for(var i = 0; i < array.length; i++){
+					drawPoint(i)
+				}
+
+				for(var i = 0; i < borderlist.length; i++){
+					var coords = [[-1,0],[0,-1],[1,0],[0,1]]
+					for(var i2 = 0; i2 < coords.length; i2++){
+						var index = borderlist[i] + coords[i2][0] + coords[i2][1] * (temp.w * temp.mmx)
+						if(array[index] == 0 && Math.floor(borderlist[i] / (temp.w * temp.mmx)) == Math.floor((borderlist[i] + coords[i2][0] /*&& (!(index > temp.w * temp.h) || coords[i2][0] < 1)*/) / (temp.w * temp.mmx))){
+							array[index] = new Pixel(array[borderlist[i]].hsl, 1)
+							drawPoint(index)
+						}
+					}
+				}
+				sctx.putImageData(imageData,0,0)
+
+				this.canvas.push(canvas)
+			}
+		}
+	</script>
+
+	<script>
+		var tools = {0:[0],1:[1],2:[2],3:[0,1],4:[0,2],5:[1,2],6:[0,1,2]}
+		var tcolors = ["#fff","#f00","#0f0","#900","#090","#00f","#aa0"]
+		var b = document.querySelector('#tools input')
+		for(var i in tools){
+			var btn = document.createElement('button')
+			btn.textContent = i
+			btn.number = i
+			btn.onclick = function(){
+				setTool(this.number)
+			}
+			btn.style.backgroundColor = tcolors[i]
+			btn.title = tools[i].join(', ')
+			btn.classList.add('btn-'+i)
+			var br = document.createElement('br')
+			b.parentElement.insertBefore(br,b)
+			br.parentElement.insertBefore(btn,br)
+		}
+		var colorid = 0;
+
+		var tool = 0
+		function setTool(x){
+			tool = Number(x)
+			var selected = document.querySelector('#tools button.selected')
+			if(selected != undefined){
+				selected.classList.remove('selected')
+			}
+			document.querySelector('#tools button.btn-'+x).classList.add('selected')
+		}
+		setTool(2)
+
+		var dontdelete = false;
+
+		var ranges = []
+		for(var i = 0; i < 4; i++){
+			var range = new RangeBar({
+				values:[[],[[250,360]],[[140,220]],[]][i],
+				min: 0, // value at start of bar
+				max: 360, // value at end of bar
+				minSize: 15, // smallest allowed range (in bar units)
+				label: function(){
+					return '-'
+				},
+			});
+			range.$el[0].id = ['h','s','l','invisible'][i]+'-range'
+			range.on('changing', function(e){
+				dontdelete = true;
+			})
+			range.on('change', function(e){
+				colorid = id()
+				setTimeout(function(){dontdelete=false},0)
+			})
+			ranges.push(range)
+			document.querySelector('#color').appendChild(range.$el[0])
+		}
+
+		var _id = 0
+		function id(){
+			_id += 1
+			return _id
+		}
+		colorid = id()
+
+		function rndint(a,b){
+			return a + Math.floor(Math.random()*(b - a + 1))
+		}
+		function getHSL(){
+			var hsl = {}
+			for(var i = 0; i < 3; i++){
+				var value = ranges[i].val()
+				if(value.length == 0){
+					value = [[0,360]]
+				}
+				hsl[['h','s','l'][i]] = {
+					id:colorid,
+					value: value,
+					variation: Number(document.querySelector('#'+['h','s','l'][i]+'-variation').value)
+				}
+			}
+			return hsl
+		}
+
+		coloridstorage = {}
+		function getColor(hsl){
+			var output = [0,0,0]
+			if(hsl == undefined){return output}
+			for(var i = 0; i < Object.keys(hsl).length; i++){
+				var o = hsl[Object.keys(hsl)[i]]
+				var variationoffset = coloridstorage[['h','s','l'][i]+o.id] || rndint(0, Math.max(o.value[0][1] - o.value[0][0] - o.variation, 0))
+				coloridstorage[['h','s','l'][i] + o.id] = variationoffset
+				output[i] = rndint(o.value[0][0] + variationoffset, o.value[0][0] + variationoffset + rndint(0, Math.min(o.value[0][1] - variationoffset, o.variation)))
+				if(true){
+					output[i] = output[i] / 360;
+				}
+			}
+			output = hslToRgb(output[0], output[1], output[2])
+			return output
+		}
+		function hslToRgb(h, s, l){
+		    var r, g, b;
+
+		    if(s == 0){
+		        r = g = b = l; // achromatic
+		    }else{
+		        var hue2rgb = function hue2rgb(p, q, t){
+		            if(t < 0) t += 1;
+		            if(t > 1) t -= 1;
+		            if(t < 1/6) return p + (q - p) * 6 * t;
+		            if(t < 1/2) return q;
+		            if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+		            return p;
+		        }
+
+		        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+		        var p = 2 * l - q;
+		        r = hue2rgb(p, q, h + 1/3);
+		        g = hue2rgb(p, q, h);
+		        b = hue2rgb(p, q, h - 1/3);
+		    }
+
+		    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+		}
+
+
+		function Pixel(hsl, tl){
+			this.id = id()
+			this.tool = tl || tool
+			this.hsl = hsl || getHSL()
+		}
+
+		function destroyrange(r){
+			if(!dontdelete){
+				var index = Array.prototype.indexOf.call(r.parentElement.children, r);
+				var index2 = Array.prototype.indexOf.call(r.parentElement.parentElement.children, r.parentElement)
+				var arange = ranges[index2].ranges[index]
+				ranges[index2].ranges.splice(index,1)
+				arange.$el[0].parentElement.removeChild(arange.$el[0])
+				//range.remove()
+			}
+			
+		}
+	</script>
+
+	<script src="main.js"></script>
+
+	<script>
+
+		/*
+			Empty
+			Always border
+			Always body
+			Randomly chosen Empty/Border
+			Randomly chosen Empty/Body
+			Randomly chosen Border/Body
+			Randomly chosen Border/Empty/Body
+
+			//
+			Single color (not contributing to border?)
+		*/
+
+		/*
+			color picker
+			H range | H variation
+			S range | S variation
+			L range | L variation
+		*/
+		
+		var editor = document.querySelector('#editor')
+		var ctx = editor.getContext('2d')
+		var PIXEL_SIZE = 30
+		var GRID_SIZE = [16,16]
+		
+		var frames = []
+		var currentframe;
+
+		function clearGrid(){
+			frames[currentframe] = frames[currentframe].map(function(x){return x.map(function(){return 0})})
+			updateSprites();
+		}
+
+		function setFrame(i){
+			document.querySelector('#frames').innerHTML = ''
+			for(var a = 0; a < frames.length; a++){
+				var frame = document.createElement('button')
+				frame.textContent = a
+				frame.setAttribute('data-n', a)
+				frame.onclick = function(e){
+					setFrame(Number(this.getAttribute('data-n')))
+				}
+				frame.classList.add('frame')
+				document.querySelector('#frames').appendChild(frame)
+			}
+			currentframe = i
+			/*var selected = document.querySelector('#frames .frame.selected')
+			if(selected != undefined){
+				selected.classList.remove('selected')
+			}*/
+			document.querySelector('#frames').children[i].classList.add('selected')
+			try{
+				updateSprites()
+			}catch(c){}
+		}
+		function addFrame(){
+			if(currentframe != undefined){
+				frames.push(clone(frames[currentframe]))
+			}else{
+				var grid = []
+
+				for(var y = 0; y < GRID_SIZE[1]; y++){
+					var row = []
+					for(var x = 0; x < GRID_SIZE[0]; x++){
+						row.push(0)
+					}
+					grid.push(row)
+				}
+
+				frames.push(grid)
+			}
+
+			setFrame(frames.length-1)
+		}
+		addFrame()
+
+		function removeFrame(){
+			frames.splice(currentframe,1)
+			//framesel = document.querySelector('#frames')
+			//framesel.removeChild(framesel.children[currentframe])
+			setFrame(currentframe - 1)
+			updateSprites()
+		}
+
+		var mirror = {x:false,y:false}
+		function toggleMirror(m){
+			mirror[m] = !mirror[m]
+			updateSprites()
+		}
+
+		editor.width = GRID_SIZE[0]*PIXEL_SIZE+1
+		editor.height = GRID_SIZE[1]*PIXEL_SIZE+1
+		ctx.translate(.5,.5)
+
+		var mouse = {x:0,y:0,down:false}
+
+		function update(){
+			requestAnimationFrame(update)
+			ctx.clearRect(0,0,editor.width,editor.height)
+			for(var y = 0; y < GRID_SIZE[1]; y++){
+				for(var x = 0; x < GRID_SIZE[0]; x++){
+					var mx = x;
+					var my = y;
+					if(mirror.x && mx >= GRID_SIZE[0]/2){
+						mx = GRID_SIZE[0] - mx - 1
+					}
+					if(mirror.y && my >= GRID_SIZE[1]/2){
+						my = GRID_SIZE[1] - my - 1
+					}
+					ctx.strokeRect(x*PIXEL_SIZE,y*PIXEL_SIZE,PIXEL_SIZE,PIXEL_SIZE)
+					if(frames[currentframe][my][mx] != 0 && frames[currentframe][my][mx].tool > 0){
+						ctx.fillStyle = tcolors[frames[currentframe][my][mx].tool]
+						ctx.fillRect(x*PIXEL_SIZE,y*PIXEL_SIZE,PIXEL_SIZE,PIXEL_SIZE)
+					}
+				}
+			}
+			ctx.fillStyle="rgba(0,0,0,0.1)"
+			ctx.fillRect(Math.floor(mouse.x/PIXEL_SIZE)*PIXEL_SIZE, Math.floor(mouse.y/PIXEL_SIZE)*PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE)
+		
+			if(movingpixel != undefined){
+				var x = Math.floor(mouse.x/PIXEL_SIZE) * PIXEL_SIZE
+				var y = Math.floor(mouse.y/PIXEL_SIZE) * PIXEL_SIZE
+				ctx.fillStyle = tcolors[movingpixel.tool]
+				ctx.fillRect(x,y,PIXEL_SIZE,PIXEL_SIZE)
+			}
+		}
+		window.onmousemove = function(e){
+			mouse.x = e.clientX - editor.offsetLeft + window.scrollX;
+			mouse.y = e.clientY - editor.offsetTop + window.scrollY;
+		}
+		var drawn = {}
+		function drawPixel(){
+			if(tool >= 0){
+				var x = Math.floor(mouse.x/PIXEL_SIZE)
+				var y = Math.floor(mouse.y/PIXEL_SIZE)
+				if(mirror.x && x >= GRID_SIZE[0]/2){
+					x = GRID_SIZE[0] - x - 1
+				}
+				if(mirror.y && y >= GRID_SIZE[1]/2){
+					y = GRID_SIZE[1] - y - 1
+				}
+				if(drawn[x+','+y] == undefined){
+					if(tool > 0){
+						frames[currentframe][y][x] = new Pixel();
+					}else{
+						frames[currentframe][y][x] = 0
+					}
+					drawn[x+','+y] = true
+					updateSprites();
+				}
+			}
+		}
+
+		var movingpixel;
+
+		editor.onmousemove = function(e){
+			if(mouse.down){
+				drawPixel()
+			}
+		}
+		editor.onmousedown = function(e){
+			var x = Math.floor(mouse.x/PIXEL_SIZE)
+			var y = Math.floor(mouse.y/PIXEL_SIZE)
+			if(tool == -1 && frames[currentframe][y][x] != 0){
+				movingpixel = frames[currentframe][y][x]
+				frames[currentframe][y][x] = 0
+			}
+			drawPixel()
+			mouse.down = true
+		}
+		window.onmouseup = function(e){
+			mouse.down = false
+			if(tool == -1 && movingpixel != undefined){
+				var x = Math.floor(mouse.x/PIXEL_SIZE)
+				var y = Math.floor(mouse.y/PIXEL_SIZE)
+				frames[currentframe][y][x] = movingpixel
+				movingpixel = undefined
+				updateSprites()
+			}
+			drawn = {}
+		}
+		update()
+	</script>
+
+	<script type="text/javascript" charset="utf-8">
+		function getScaledImageData(scale,c,x,y,w,h) {
+				var imageData = c.getImageData(x,y,w,h)
+				var scaled = c.createImageData(imageData.width * scale, imageData.height * scale);
+
+				for(var row = 0; row < imageData.height; row++) {
+					for(var col = 0; col < imageData.width; col++) {
+						var sourcePixel = [
+							imageData.data[(row * imageData.width + col) * 4 + 0],
+							imageData.data[(row * imageData.width + col) * 4 + 1],
+							imageData.data[(row * imageData.width + col) * 4 + 2],
+							imageData.data[(row * imageData.width + col) * 4 + 3]
+						];
+						for(var y = 0; y < scale; y++) {
+							var destRow = row * scale + y;
+							for(var x = 0; x < scale; x++) {
+								var destCol = col * scale + x;
+								for(var i = 0; i < 4; i++) {
+									scaled.data[(destRow * scaled.width + destCol) * 4 + i] =
+										sourcePixel[i];
+								}
+							}
+						}
+					}
+				}
+
+			return scaled;
+		}
+		var SPRITE_SCALE = 4;
+		var SPRITE_COUNT = 10;
+
+		var sprite;
+		preview = document.querySelector('#preview');
+
+		var spritelist = []
+		var timer = 0;
+		var currentspriteframe = 0;
+		function updateSprites(){
+			spritelist = []
+			var arr = []
+			//for(var i = 0; i < frames[currentframe].length/(mirror.y+1); i++){
+				arr = frames.map(function(a){
+					var arr2 = []
+					for(var i = 0 ; i < a.length/(mirror.y+1); i++){
+						arr2 = arr2.concat( a[i].filter(function(x,index){
+							if(!(mirror.x && index > GRID_SIZE[0]/2-1)){
+								return true
+							}
+						}) )
+					}
+					return arr2
+				})
+				//arr = arr.concat(frames[currentframe][i])
+			//}
+			var mask = new rspr.Template(arr,GRID_SIZE[0]/(mirror.x+1),GRID_SIZE[1]/(mirror.y+1),mirror.x,mirror.y)
+			for (var i = 0; i < SPRITE_COUNT; i++) {
+				sprite = new rspr.Sprite(mask);
+				for(var i2 = 0; i2 < sprite.canvas.length; i2++){
+					var canvas = sprite.canvas[i2];
+					var ctx2 = canvas.getContext('2d');
+					var imageData = getScaledImageData(SPRITE_SCALE,ctx2,0,0,canvas.width,canvas.height);
+					canvas.width = GRID_SIZE[0]*SPRITE_SCALE;
+					canvas.height = GRID_SIZE[1]*SPRITE_SCALE;
+					canvas.classList.add('sprite');
+					ctx2.putImageData(imageData,0,0);
+				}
+				spritelist.push(sprite)
+			}
+
+			currentspriteframe = 0
+			renderSprites()
+			timer = 0
+		}
+
+		var animating = true
+		var animationspeed = 20
+		function renderInterval(){
+			requestAnimationFrame(renderInterval)
+			if(animating == true){
+				timer+=1
+				if(timer > animationspeed){
+					timer = 0
+					renderSprites()
+				}
+			}
+		}
+		renderInterval()
+
+		function renderSprites(){
+			preview.innerHTML = '';
+			for(var i = 0; i < spritelist.length; i++){
+				var canvas = spritelist[i].canvas[currentspriteframe];
+				preview.appendChild(canvas);
+			}
+			currentspriteframe += 1
+			currentspriteframe = currentspriteframe % spritelist[0].canvas.length
+		}
+	</script>
+</body>
+</html>
