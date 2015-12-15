@@ -57,7 +57,7 @@
 			background: -webkit-linear-gradient(top, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
 			background: linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
 		}
-		#s-range{	
+		#s-range{
 			background: rgba(255,255,255,1);
 			background: -moz-linear-gradient(left, rgba(255,255,255,1) 0%, rgba(255,0,0,1) 100%);
 			background: -webkit-gradient(left top, right top, color-stop(0%, rgba(255,255,255,1)), color-stop(100%, rgba(255,0,0,1)));
@@ -67,7 +67,7 @@
 			background: linear-gradient(to right, rgba(255,255,255,1) 0%, rgba(255,0,0,1) 100%);
 			filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#ff0000', GradientType=1 );
 		}
-		#l-range{	
+		#l-range{
 			background: rgba(0,0,0,1);
 			background: -moz-linear-gradient(left, rgba(0,0,0,1) 0%, rgba(255,255,255,1) 100%);
 			background: -webkit-gradient(left top, right top, color-stop(0%, rgba(0,0,0,1)), color-stop(100%, rgba(255,255,255,1)));
@@ -105,6 +105,19 @@
 		.frame.selected{
 			outline:2px solid #000;
 		}
+
+		#palette button{
+			background-color:#ccc;
+			margin:5px;
+			border:0;
+			cursor:pointer;
+		}
+		#palette button.selected{
+			outline:2px solid #000;
+		}
+		#palette{
+			display:inline-block;
+		}
 	</style>
 </head>
 <body>
@@ -127,19 +140,22 @@
 		<button onclick="animating = !animating">Toggle Animation</button><br />
 		Animation Speed: <input type="range" min="2" max="60" value="20" onmousemove="this.nextSibling.textContent = this.value; animationspeed = Number(this.value)" autocomplete="off"/><span>20</span>
 		<div id="preview">
-			
+
 		</div>
 	</div>
-	<div id="pallette"></div>
+	<div id="palette-container">
+		<div id="palette"></div>
+		<button onclick="addColor()">+</button>
+	</div>
 	<div id="color">
-		
+
 	</div>
 	<div id="variation">
-		<input id="h-variation" value="50" min="15" max="360" onmousemove="this.nextSibling.textContent = this.value"  autocomplete="off" type="range"/><span>50</span><br/>
-		<input id="s-variation" value="50" min="15" max="360" onmousemove="this.nextSibling.textContent = this.value"  autocomplete="off" type="range"/><span>50</span><br/>
-		<input id="l-variation" value="50" min="15" max="360" onmousemove="this.nextSibling.textContent = this.value"  autocomplete="off" type="range"/><span>50</span>
+		<input id="h-variation" value="50" min="15" max="360" onmousemove="this.nextSibling.textContent = this.value; updateColor()"  autocomplete="off" type="range"/><span>50</span><br/>
+		<input id="s-variation" value="50" min="15" max="360" onmousemove="this.nextSibling.textContent = this.value; updateColor()"  autocomplete="off" type="range"/><span>50</span><br/>
+		<input id="l-variation" value="50" min="15" max="360" onmousemove="this.nextSibling.textContent = this.value; updateColor()"  autocomplete="off" type="range"/><span>50</span>
 	</div>
-	<div><button onclick="alert('You can\'t export just yet.')">EXPORT</button></div>
+	<div><button onclick="exportSprite()">EXPORT</button></div>
 	<script>
 		var rspr = {}
 
@@ -156,7 +172,7 @@
 		function clone(item) {
     if (!item) { return item; } // null, undefined values check
 
-    var types = [ Number, String, Boolean ], 
+    var types = [ Number, String, Boolean ],
         result;
 
     // normalizing primitives if someone did new String('aaa'), or new Number('444');
@@ -169,13 +185,13 @@
     if (typeof result == "undefined") {
         if (Object.prototype.toString.call( item ) === "[object Array]") {
             result = [];
-            item.forEach(function(child, index, array) { 
+            item.forEach(function(child, index, array) {
                 result[index] = clone( child );
             });
         } else if (typeof item == "object") {
             // testing that this is DOM
             if (item.nodeType && typeof item.cloneNode == "function") {
-                var result = item.cloneNode( true );    
+                var result = item.cloneNode( true );
             } else if (!item.prototype) { // check that this is a literal
                 if (item instanceof Date) {
                     result = new Date(item);
@@ -206,7 +222,7 @@
 
 		rspr.Sprite = function(temp){
 			coloridstorage = {} // resets coloridstorage
-			
+
 			var idstatestorage = {}
 			var idcolorstorage = {}
 			this.canvas = []
@@ -228,9 +244,9 @@
 				if(temp.my){
 					array = array.concat(array.map(function(){return 0}))
 				}
-				
+
 				var canvas = document.createElement('canvas')
-				canvas.width = temp.w * temp.mmx 
+				canvas.width = temp.w * temp.mmx
 				canvas.height = temp.h * temp.mmy
 				var sctx = canvas.getContext('2d')
 				var imageData = sctx.getImageData(0,0,canvas.width, canvas.height)
@@ -254,7 +270,7 @@
 					if(type == 0){
 						array[i] = 0
 					}if(type == 1){
-						array[i].hsl.l = {value: [[50,80]], variation:20} // CHANGE THIS BASED ON HOW BRIGHT YOU WANT THE BORDERS TO BE	
+						array[i].hsl.l = {value: [[50,80]], variation:20} // CHANGE THIS BASED ON HOW BRIGHT YOU WANT THE BORDERS TO BE
 					}else if (type == 2){
 						borderlist.push(i)
 					}
@@ -269,7 +285,7 @@
 					}
 				}
 				if(temp.my){ // mirror y
-					for(var i = l/2; i < l; i++){ 
+					for(var i = l/2; i < l; i++){
 						array = array.slice(0, i*(temp.w * temp.mmx)).concat( array.slice((l-i-1)*(temp.w * temp.mmx), (l-i-1)*(temp.w * temp.mmx)+(temp.w * temp.mmx)) ).concat((i+1)*(temp.w * temp.mmx))
 					}
 				}
@@ -340,11 +356,12 @@
 			});
 			range.$el[0].id = ['h','s','l','invisible'][i]+'-range'
 			range.on('changing', function(e){
+				//updateColor()
 				dontdelete = true;
 			})
 			range.on('change', function(e){
-				colorid = id()
-				setTimeout(function(){dontdelete=false},0)
+				
+				setTimeout(function(){updateColor();dontdelete=false},0)
 			})
 			ranges.push(range)
 			document.querySelector('#color').appendChild(range.$el[0])
@@ -355,12 +372,39 @@
 			_id += 1
 			return _id
 		}
-		colorid = id()
 
 		function rndint(a,b){
 			return a + Math.floor(Math.random()*(b - a + 1))
 		}
-		function getHSL(){
+
+		var colorlist = []
+		var currentcolor;
+		function setColor(i){
+			currentcolor = i
+			var selected = document.querySelector('#palette .selected')
+			if(selected != undefined){
+				selected.classList.remove('selected')
+			}
+			document.querySelector('#palette').children[i].classList.add('selected')
+			for(var a = 0; a < 3; a++){
+				console.log(colorlist[i][['h','s','l'][a]])
+				ranges[a].setVal( colorlist[i][['h','s','l'][a]].value )
+			}
+		}
+		function updateColor(){
+		
+			for(var i = 0; i < 3; i++){
+				var value = ranges[i].val()
+				console.log(value)
+				if(value.length == 0){
+					value = [[0,360]]
+				}
+				colorlist[currentcolor][['h','s','l'][i]].value = value
+				colorlist[currentcolor][['h','s','l'][i]].variation = Number(document.querySelector('#'+['h','s','l'][i]+'-variation').value)
+			}
+			updateSprites()
+		}
+		function addColor(){
 			var hsl = {}
 			for(var i = 0; i < 3; i++){
 				var value = ranges[i].val()
@@ -368,26 +412,41 @@
 					value = [[0,360]]
 				}
 				hsl[['h','s','l'][i]] = {
-					id:colorid,
+					id:id(),
 					value: value,
 					variation: Number(document.querySelector('#'+['h','s','l'][i]+'-variation').value)
 				}
 			}
-			return hsl
+			var colorel = document.createElement('button')
+			colorel.textContent = colorlist.length
+			colorel.setAttribute('data-n',colorlist.length)
+			colorel.onclick = function(){
+				setColor(this.getAttribute('data-n'))
+			}
+			document.querySelector('#palette').appendChild(colorel)
+			currentcolor = colorlist.length
+			colorlist.push(hsl)
+			setColor(colorlist.length - 1)
+		}
+		addColor()
+		function getHSL(){
+			return colorlist[currentcolor]
 		}
 
 		coloridstorage = {}
-		function getColor(hsl){
+		function getColor(hsl, novariation){
 			var output = [0,0,0]
 			if(hsl == undefined){return output}
 			for(var i = 0; i < Object.keys(hsl).length; i++){
 				var o = hsl[Object.keys(hsl)[i]]
 				var variationoffset = coloridstorage[['h','s','l'][i]+o.id] || rndint(0, Math.max(o.value[0][1] - o.value[0][0] - o.variation, 0))
 				coloridstorage[['h','s','l'][i] + o.id] = variationoffset
-				output[i] = rndint(o.value[0][0] + variationoffset, o.value[0][0] + variationoffset + rndint(0, Math.min(o.value[0][1] - variationoffset, o.variation)))
-				if(true){
-					output[i] = output[i] / 360;
+				if(novariation == true){
+					output[i] = rndint(o.value[0][0], o.value[0][1])
+				}else{
+					output[i] = rndint(o.value[0][0] + variationoffset, o.value[0][0] + variationoffset + rndint(0, Math.min(o.value[0][1] - variationoffset, o.variation)))
 				}
+				output[i] = output[i] / 360
 			}
 			output = hslToRgb(output[0], output[1], output[2])
 			return output
@@ -416,6 +475,22 @@
 
 		    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 		}
+		function createColorCanvas(hsl, w, h){
+			var ccanvas = document.createElement('canvas')
+			ccanvas.width = w
+			ccanvas.height = h
+			var cctx = ccanvas.getContext('2d')
+			var imageData = cctx.getImageData(0,0,w,h)
+			for(var i = 0; i < imageData.data.length; i+=4){
+				var color = getColor(hsl, true)
+				imageData.data[i] = color[0]
+				imageData.data[i+1] = color[1]
+				imageData.data[i+2] = color[2]
+				imageData.data[i+3] = 255
+			}
+			cctx.putImageData(imageData, 0, 0)
+			return ccanvas
+		}
 
 
 		function Pixel(hsl, tl){
@@ -433,7 +508,7 @@
 				arange.$el[0].parentElement.removeChild(arange.$el[0])
 				//range.remove()
 			}
-			
+
 		}
 	</script>
 
@@ -450,8 +525,9 @@
 			Randomly chosen Border/Body
 			Randomly chosen Border/Empty/Body
 
-			//
+			// other ideas (number of tools grows exponentially as I add new things, may want to create a new way to pick tools)
 			Single color (not contributing to border?)
+			Always/randomly chosen IF adjacent is _____
 		*/
 
 		/*
@@ -460,12 +536,12 @@
 			S range | S variation
 			L range | L variation
 		*/
-		
+
 		var editor = document.querySelector('#editor')
 		var ctx = editor.getContext('2d')
 		var PIXEL_SIZE = 30
 		var GRID_SIZE = [16,16]
-		
+
 		var frames = []
 		var currentframe;
 
@@ -559,7 +635,7 @@
 			}
 			ctx.fillStyle="rgba(0,0,0,0.1)"
 			ctx.fillRect(Math.floor(mouse.x/PIXEL_SIZE)*PIXEL_SIZE, Math.floor(mouse.y/PIXEL_SIZE)*PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE)
-		
+
 			if(movingpixel != undefined){
 				var x = Math.floor(mouse.x/PIXEL_SIZE) * PIXEL_SIZE
 				var y = Math.floor(mouse.y/PIXEL_SIZE) * PIXEL_SIZE
@@ -623,6 +699,42 @@
 			drawn = {}
 		}
 		update()
+
+		function exportSprite(){
+			var arr = frames.map(function(a){
+				var arr2 = []
+				for(var i = 0 ; i < a.length/(mirror.y+1); i++){
+					arr2 = arr2.concat( a[i].filter(function(x,index){
+						if(!(mirror.x && index > GRID_SIZE[0]/2-1)){
+							return true
+						}
+					}) )
+				}
+				return arr2
+			})
+			copyToClipboard('new rspr.Template('+[JSON.stringify(arr), GRID_SIZE[0]/(mirror.x+1), GRID_SIZE[1]/(mirror.y+1), mirror.x, mirror.y].join(',')+')')
+		}
+		function copyToClipboard(text) {
+		    if (window.clipboardData && window.clipboardData.setData) {
+		        // IE specific code path to prevent textarea being shown while dialog is visible.
+		        return clipboardData.setData("Text", text);
+
+		    } else if (document.queryCommandSupported && document.queryCommandSupported("copy")) {
+		        var textarea = document.createElement("textarea");
+		        textarea.textContent = text;
+		        textarea.style.position = "fixed";  // Prevent scrolling to bottom of page in MS Edge.
+		        document.body.appendChild(textarea);
+		        textarea.select();
+		        try {
+		            return document.execCommand("copy");  // Security exception may be thrown by some browsers.
+		        } catch (ex) {
+		            console.warn("Copy to clipboard failed.", ex);
+		            return false;
+		        } finally {
+		            document.body.removeChild(textarea);
+		        }
+		    }
+		}
 	</script>
 
 	<script type="text/javascript" charset="utf-8">
@@ -664,21 +776,18 @@
 		var currentspriteframe = 0;
 		function updateSprites(){
 			spritelist = []
-			var arr = []
-			//for(var i = 0; i < frames[currentframe].length/(mirror.y+1); i++){
-				arr = frames.map(function(a){
-					var arr2 = []
-					for(var i = 0 ; i < a.length/(mirror.y+1); i++){
-						arr2 = arr2.concat( a[i].filter(function(x,index){
-							if(!(mirror.x && index > GRID_SIZE[0]/2-1)){
-								return true
-							}
-						}) )
-					}
-					return arr2
-				})
-				//arr = arr.concat(frames[currentframe][i])
-			//}
+			var arr = frames.map(function(a){
+				var arr2 = []
+				for(var i = 0 ; i < a.length/(mirror.y+1); i++){
+					arr2 = arr2.concat( a[i].filter(function(x,index){
+						if(!(mirror.x && index > GRID_SIZE[0]/2-1)){
+							return true
+						}
+					}) )
+				}
+				return arr2
+			})
+
 			var mask = new rspr.Template(arr,GRID_SIZE[0]/(mirror.x+1),GRID_SIZE[1]/(mirror.y+1),mirror.x,mirror.y)
 			for (var i = 0; i < SPRITE_COUNT; i++) {
 				sprite = new rspr.Sprite(mask);
@@ -722,6 +831,7 @@
 			currentspriteframe += 1
 			currentspriteframe = currentspriteframe % spritelist[0].canvas.length
 		}
+
 	</script>
 </body>
 </html>
