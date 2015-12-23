@@ -361,7 +361,7 @@
 			})
 			range.on('change', function(e){
 				
-				setTimeout(function(){updateColor();dontdelete=false},0)
+				setTimeout(function(){updateColor();dontdelete=false;randomColorStorage={}},0)
 			})
 			ranges.push(range)
 			document.querySelector('#color').appendChild(range.$el[0])
@@ -613,6 +613,8 @@
 
 		var mouse = {x:0,y:0,down:false}
 
+		var randomColorStorage = {}
+
 		function update(){
 			requestAnimationFrame(update)
 			ctx.clearRect(0,0,editor.width,editor.height)
@@ -629,7 +631,16 @@
 					ctx.strokeRect(x*PIXEL_SIZE,y*PIXEL_SIZE,PIXEL_SIZE,PIXEL_SIZE)
 					if(frames[currentframe][my][mx] != 0 && frames[currentframe][my][mx].tool > 0){
 						ctx.fillStyle = tcolors[frames[currentframe][my][mx].tool]
-						ctx.fillRect(x*PIXEL_SIZE,y*PIXEL_SIZE,PIXEL_SIZE,PIXEL_SIZE)
+						var colorCanvas = randomColorStorage[frames[currentframe][my][mx].id] || createColorCanvas(frames[currentframe][my][mx].hsl, PIXEL_SIZE, PIXEL_SIZE)
+						randomColorStorage[frames[currentframe][my][mx].id] = colorCanvas
+						ctx.drawImage(colorCanvas, x * PIXEL_SIZE, y * PIXEL_SIZE)
+						ctx.beginPath()
+						ctx.moveTo(x * PIXEL_SIZE, y * PIXEL_SIZE)
+						ctx.lineTo(x * PIXEL_SIZE + PIXEL_SIZE, y * PIXEL_SIZE)
+						ctx.lineTo(x * PIXEL_SIZE, y * PIXEL_SIZE + PIXEL_SIZE)
+						ctx.closePath()
+						ctx.fill()
+						//ctx.fillRect(x*PIXEL_SIZE,y*PIXEL_SIZE,PIXEL_SIZE,PIXEL_SIZE)
 					}
 				}
 			}
@@ -828,8 +839,10 @@
 				var canvas = spritelist[i].canvas[currentspriteframe];
 				preview.appendChild(canvas);
 			}
-			currentspriteframe += 1
-			currentspriteframe = currentspriteframe % spritelist[0].canvas.length
+			if(spritelist.length != 0){
+				currentspriteframe += 1
+				currentspriteframe = currentspriteframe % spritelist[0].canvas.length
+			}
 		}
 
 	</script>
